@@ -202,7 +202,6 @@ body {
   box-shadow: 0 4px 14px rgba(140, 96, 56, .10);
 }
 
-#next { display: block; width: 96px; height: 96px; margin: 2px auto 0; }
 #chain { display: block; width: 100%; height: auto; }
 
 .chain-note {
@@ -471,11 +470,7 @@ body {
   .btn { min-height: 40px; padding: 0 10px; font-size: 13px; }
 }
 
-/* 桌面矮窗口：先砍合成表（768p 笔记本就属于这一档） */
-@media (max-height: 720px) and (min-width: 861px) {
-  .chain-box { display: none; }
-}
-
+/* 合成表现在是面板主角，矮窗口也不再隐藏；面板自带滚动兜底 */
 /* 再矮就把棋盘抬到 92vh，靠面板自己滚兜底 */
 @media (max-height: 620px) and (min-width: 861px) {
   .stage { height: 92vh; }
@@ -508,11 +503,6 @@ body {
         <span class="stat-label">最高分</span>
         <strong class="stat-value stat-best" id="best">0</strong>
       </div>
-    </div>
-
-    <div class="next-box">
-      <span class="box-label">下一个</span>
-      <canvas id="next" width="160" height="160" aria-label="下一个水果"></canvas>
     </div>
 
     <div class="chain-box">
@@ -640,8 +630,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
   const stage      = $('stage');
   const canvas     = $('c');
   const ctx        = canvas.getContext('2d');
-  const nextCanvas = $('next');
-  const nextCtx    = nextCanvas.getContext('2d');
   const chainCanvas = $('chain');
   const chainCtx   = chainCanvas.getContext('2d');
 
@@ -1003,7 +991,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
       if (nt === MAX_TIER) state.flash = 1;
     }
     state.balls = state.balls.filter(b => !b.dead);
-    drawNext();
   }
 
   function addScore(n, x, y) {
@@ -1053,7 +1040,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
     state.cooldown = DROP_MS / 1000;
     state.pending = state.next;
     state.next = rollTier();
-    drawNext();
     Sound.drop();
   }
 
@@ -1102,7 +1088,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
     state.next = rollTier();
     scoreEl.textContent = '0';
     bestEl.textContent = state.best;
-    drawNext();
     closeBoard();
   }
 
@@ -1361,19 +1346,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
     ctx.fillText('最高 ' + state.best + ' · 点击或按 R 重开', W / 2, H / 2 + 58);
   }
 
-  /* 面板里的“下一个” */
-  function drawNext() {
-    if (!nextCanvas) return;
-    const w = nextCanvas.width, h = nextCanvas.height;
-    nextCtx.setTransform(1, 0, 0, 1, 0, 0);
-    nextCtx.clearRect(0, 0, w, h);
-    const tier = state.next;
-    const r = FRUITS[tier].r;
-    // 人像比球高（SPRITE_SCALE），面板里要留出头顶的空间
-    const k = (Math.min(w, h) * (FRUITS[tier].img ? 0.30 : 0.42)) / r;
-    drawFruit(nextCtx, w / 2, h / 2, r * k, tier, 0, 1);
-  }
-
   /* 面板里的“合成表” */
   function drawChain() {
     if (!chainCanvas) return;
@@ -1412,7 +1384,7 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
       if (!f.file) continue;
       const img = new Image();
       img.onload = () => {
-        const ready = () => { f.img = img; drawNext(); drawChain(); };
+        const ready = () => { f.img = img; drawChain(); };
         /* 等 decode 完成再交给 drawImage，避免画出没解码完的半成品 */
         if (img.decode) img.decode().then(ready, ready);
         else ready();
@@ -1534,7 +1506,6 @@ window.SUIKA_SHAPES = [{"parts":[[0.0625,-0.4258,0.0305],[-0.0625,-0.4258,0.0205
   state.next = rollTier();
   paintSound();
   drawChain();
-  drawNext();
   loadSprites();               // 贴图到位前先画圆球，到了自动替换
   scoreEl.textContent = '0';
   bestEl.textContent = state.best;
